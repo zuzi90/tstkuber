@@ -41,4 +41,5 @@ COPY --from=builder /src/app /app/app
 # Не забудь выставить исполняемые права!
 RUN chmod +x /app/app
 
-CMD ["/app/app"]
+#CMD ["/app/app"]
+ENTRYPOINT ["/app/app"]
