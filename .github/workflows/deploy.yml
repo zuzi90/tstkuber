@@ -91,7 +91,9 @@ jobs:
           script: |
             cd /home/ciuser/projects/tstkuber
             git pull origin main
-            cd ..
-            microk8s kubectl apply -f k8s/
+            go build -o app
+            kubectl rollout restart deployment tst-app
+#            cd ..
+#            microk8s kubectl apply -f k8s/
 
 
