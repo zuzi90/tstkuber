@@ -80,7 +80,7 @@ jobs:
       - name: Run tests
         run: |
           # здесь твои тесты, например:
-          pytest tests/
+          go test ./...
 
       - name: Deploy manifests to K8s
         uses: appleboy/ssh-action@master
