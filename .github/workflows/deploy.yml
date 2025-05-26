@@ -89,7 +89,7 @@ jobs:
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
-            cd /home/ciuser/project
+            cd /home/ciuser/projects/tstkuber
             git pull origin main
             microk8s kubectl apply -f k8s/
 
