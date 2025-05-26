@@ -40,22 +40,57 @@
 #            cd ${{ secrets.REMOTE_APP_PATH }}
 #            docker load -i image.tar
 #            kubectl rollout restart deployment tst-app
-name: Test SSH Connection
+
+
+#name: Test SSH Connection
+#
+#on:
+#  workflow_dispatch:
+#
+#jobs:
+#  test-ssh:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Test SSH to Pi
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.PI_HOST }}
+#          username: ${{ secrets.PI_USER }}
+#          key: ${{ secrets.PI_SSH_KEY }}
+#          script: |
+#            hostname
+#            uptime
+#            whoami
+
+
+
+name: CI/CD Deploy to K8s
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
-  test-ssh:
+  build-test-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH to Pi
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          # здесь твои тесты, например:
+          pytest tests/
+
+      - name: Deploy manifests to K8s
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
-            hostname
-            uptime
-            whoami
+            cd /home/ciuser/project
+            git pull origin main
+            microk8s kubectl apply -f k8s/
+
+
