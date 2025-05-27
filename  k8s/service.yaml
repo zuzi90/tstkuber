@@ -1,12 +1,24 @@
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: go-app-service
+#spec:
+#  selector:
+#    app: go-app
+#  type: ClusterIP  # Или LoadBalancer, если пробрасываешь порт
+#  ports:
+#    - protocol: TCP
+#      port: 80
+#      targetPort: 3000
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-app-service
+  name: go-app
 spec:
   selector:
     app: go-app
-  type: ClusterIP  # Или LoadBalancer, если пробрасываешь порт
   ports:
     - protocol: TCP
       port: 80
       targetPort: 3000
+  type: NodePort

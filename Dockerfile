@@ -15,20 +15,28 @@
 #COPY --from=builder /app/app /app/app
 #ENTRYPOINT ["/app/app"]
 #
-FROM golang:1.23.9 as builder
-
+#FROM golang:1.23.9 as builder
+#
+#WORKDIR /app
+#COPY main.go .
+#
+#RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o server .
+#
+#FROM alpine:latest
+#WORKDIR /app
+#COPY --from=builder /app/server .
+#
+#EXPOSE 3000
+#CMD ["./server"]
+FROM golang:1.21 as builder
 WORKDIR /app
-COPY main.go .
+COPY . .
+RUN go build -o app main.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o server .
-
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/server .
-
-EXPOSE 3000
-CMD ["./server"]
-
+FROM debian:bullseye-slim
+WORKDIR /root/
+COPY --from=builder /app/app .
+CMD ["./app"]
 
 
 
