@@ -6,14 +6,29 @@
 #FROM ghcr.io/distroless/static
 #COPY --from=builder /app/app /app/app
 #ENTRYPOINT ["/app/app"]
-FROM golang:1.22 as builder
-WORKDIR /app
-COPY . .
-RUN go build -o app
+#FROM golang:1.22 as builder
+#WORKDIR /app
+#COPY . .
+#RUN go build -o app
+#
+#FROM alpine
+#COPY --from=builder /app/app /app/app
+#ENTRYPOINT ["/app/app"]
+#
+FROM golang:1.23.9 as builder
 
-FROM alpine
-COPY --from=builder /app/app /app/app
-ENTRYPOINT ["/app/app"]
+WORKDIR /app
+COPY main.go .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o server .
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/server .
+
+EXPOSE 3000
+CMD ["./server"]
+
 
 
 

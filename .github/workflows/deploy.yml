@@ -1,98 +1,32 @@
-#name: CI/CD without Docker Hub
-#
-#on:
-#  push:
-#    branches: [ main ]
-#  workflow_dispatch:
-#
-#jobs:
-#  build-transfer-deploy:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout repo
-#        uses: actions/checkout@v4
-#
-#      - name: Build Docker image
-#        run: |
-#          docker build -t tstkuber:latest .
-#
-#      - name: Save Docker image to archive
-#        run: |
-#          docker save tstkuber:latest -o image.tar
-#
-#      - name: Copy image to Raspberry Pi
-#        uses: appleboy/scp-action@v0.1.7
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USER }}
-#          key: ${{ secrets.SSH_KEY }}
-#          source: "image.tar"
-#          target: "${{ secrets.REMOTE_APP_PATH }}"
-#
-#      - name: Load image & redeploy on Raspberry Pi
-#        uses: appleboy/ssh-action@v1.0.0
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USER }}
-#          key: ${{ secrets.SSH_KEY }}
-#          script: |
-#            cd ${{ secrets.REMOTE_APP_PATH }}
-#            docker load -i image.tar
-#            kubectl rollout restart deployment tst-app
-
-
-#name: Test SSH Connection
-#
-#on:
-#  workflow_dispatch:
-#
-#jobs:
-#  test-ssh:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Test SSH to Pi
-#        uses: appleboy/ssh-action@master
-#        with:
-#          host: ${{ secrets.PI_HOST }}
-#          username: ${{ secrets.PI_USER }}
-#          key: ${{ secrets.PI_SSH_KEY }}
-#          script: |
-#            hostname
-#            uptime
-#            whoami
-
-
-
-name: CI/CD Deploy to K8s
+name: Deploy to k3s
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build-test-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Run tests
+      - name: Install kubectl
         run: |
-          # здесь твои тесты, например:
-          go test ./...
+          curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
-      - name: Deploy manifests to K8s
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          key: ${{ secrets.PI_SSH_KEY }}
-          script: |
-            cd /home/ciuser/projects/tstkuber
-            git pull origin main
-            go build -v -o app
-            cd ..
-            microk8s kubectl apply -f k8s/
+      - name: Set up kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl version --short
+          kubectl config get-contexts
 
-
+      - name: Deploy to cluster
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
