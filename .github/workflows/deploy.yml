@@ -1,36 +1,4 @@
-#name: Deploy to k3s
-#
-#on:
-#  push:
-#    branches: [ main ]
-#
-#jobs:
-#  deploy:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout repo
-#        uses: actions/checkout@v3
-#
-#      - name: Install kubectl
-#        run: |
-#          curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-#          chmod +x kubectl
-#          sudo mv kubectl /usr/local/bin/
-#
-#      - name: Set up kubeconfig
-#        run: |
-#          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
-#          export KUBECONFIG=$PWD/kubeconfig.yaml
-#          kubectl version --short
-#          kubectl config get-contexts
-#
-#      - name: Deploy to cluster
-#        run: |
-#          export KUBECONFIG=$PWD/kubeconfig.yaml
-#          kubectl apply -f k8s/deployment.yaml
-#          kubectl apply -f k8s/service.yaml
-name: Deploy to Raspberry Pi k3s
+name: Build and Deploy to K3s
 
 on:
   push:
@@ -40,20 +8,20 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build Docker image on Pi over SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          key: ${{ secrets.PI_SSH_KEY }}
-          script: |
-            cd ${{ secrets.PI_PROJECT_PATH }}
-            git pull
-            docker build -t go-app:latest .
-            kubectl apply -f k8s/deployment.yaml
-            kubectl apply -f k8s/service.yaml
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/tstkuber:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/tstkuber:latest
+
+      - name: Set up Kubeconfig and deploy
+        run: |
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" > kubeconfig.yaml
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl apply -f k8s/deployment.yaml
