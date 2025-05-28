@@ -53,7 +53,8 @@
 
 
 # Этап сборки бинарника
-FROM --platform=linux/arm64 golang:1.23.9 AS builder
+# Этап сборки бинарника
+FROM golang:1.23.9 AS builder
 
 WORKDIR /app
 
@@ -63,18 +64,16 @@ RUN go mod download
 
 COPY . .
 
-# Явно указываем архитектуру и ОС для кросс-компиляции под ARM64
+# Кросс-компиляция для ARM64
 RUN GOARCH=arm64 GOOS=linux go build -o app main.go
 
 # Финальный образ
-FROM --platform=linux/arm64 debian:bookworm-slim
+FROM debian:bookworm-slim
 
-# Копируем только скомпилированный бинарник
 COPY --from=builder /app/app /app
 
-# Открываем порт
 EXPOSE 3000
 
-# Запускаем бинарник
 ENTRYPOINT ["/app"]
+
 

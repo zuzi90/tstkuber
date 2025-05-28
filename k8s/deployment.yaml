@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
         - name: tstkuber
-#          image: DOCKER_USERNAME/tstkuber:latest
-          image: shimon19/tstkuber
+          image: DOCKER_USERNAME/tstkuber:latest
+#          image: shimon19/tstkuber
           ports:
             - containerPort: 3000
 ---
